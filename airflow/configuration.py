@@ -29,6 +29,7 @@ import subprocess
 import warnings
 import shlex
 import sys
+import logging
 
 from future import standard_library
 
@@ -88,6 +89,8 @@ def run_command(command):
     """
     Runs command and returns stdout
     """
+    logging.debug("jeffk - env %s " % (os.environ))
+    logging.debug("jeffk - Command: %s Split: %s" % (command, shlex.split(command)))
     process = subprocess.Popen(
         shlex.split(command),
         stdout=subprocess.PIPE,
