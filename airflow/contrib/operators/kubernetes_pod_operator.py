@@ -71,7 +71,8 @@ class KubernetesPodOperator(BaseOperator):
                 pod_id=self.name,
                 cmds=self.cmds,
                 arguments=self.arguments,
-                labels=self.labels
+                labels=self.labels,
+                ports=self.ports
             )
 
             pod.secrets = self.secrets
@@ -108,6 +109,7 @@ class KubernetesPodOperator(BaseOperator):
                  image_pull_policy='IfNotPresent',
                  annotations=None,
                  resources=None,
+                 ports=None,
                  *args,
                  **kwargs):
         super(KubernetesPodOperator, self).__init__(*args, **kwargs)
@@ -125,3 +127,4 @@ class KubernetesPodOperator(BaseOperator):
         self.image_pull_policy = image_pull_policy
         self.annotations = annotations or {}
         self.resources = resources or Resources()
+        self.ports = ports or []
