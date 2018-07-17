@@ -100,6 +100,7 @@ class KubernetesPodOperator(BaseOperator):
                 cmds=self.cmds,
                 arguments=self.arguments,
                 labels=self.labels,
+                ports=self.ports
             )
 
             pod.secrets = self.secrets
@@ -148,6 +149,7 @@ class KubernetesPodOperator(BaseOperator):
                  config_file=None,
                  xcom_push=False,
                  node_selectors=None,
+                 ports=None,
                  *args,
                  **kwargs):
         super(KubernetesPodOperator, self).__init__(*args, **kwargs)
@@ -167,6 +169,7 @@ class KubernetesPodOperator(BaseOperator):
         self.get_logs = get_logs
         self.image_pull_policy = image_pull_policy
         self.node_selectors = node_selectors or {}
+        self.ports = ports or []
         self.annotations = annotations or {}
         self.affinity = affinity or {}
         self.xcom_push = xcom_push

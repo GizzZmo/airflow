@@ -143,7 +143,7 @@ class PodGenerator:
             return []
         return self.kube_config.image_pull_secrets.split(',')
 
-    def make_pod(self, namespace, image, pod_id, cmds, arguments, labels):
+    def make_pod(self, namespace, image, pod_id, cmds, arguments, labels, ports):
         volumes, volume_mounts = self._get_volumes_and_mounts()
         worker_init_container_spec = self._get_init_containers()
 
@@ -161,5 +161,6 @@ class PodGenerator:
             init_containers=worker_init_container_spec,
             volumes=volumes,
             volume_mounts=volume_mounts,
-            resources=None
+            resources=None,
+            ports=ports
         )
