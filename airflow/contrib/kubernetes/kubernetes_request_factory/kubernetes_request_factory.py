@@ -181,3 +181,8 @@ class KubernetesRequestFactory:
             req['spec']['imagePullSecrets'] = [{
                 'name': pull_secret
             } for pull_secret in pod.image_pull_secrets.split(',')]
+
+    @staticmethod
+    def extract_ports(pod, req):
+        if pod.ports:
+            req['spec']['containers']['ports'] = pod.ports
