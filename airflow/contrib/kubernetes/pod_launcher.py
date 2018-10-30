@@ -17,16 +17,18 @@
 
 import json
 import time
-from airflow.utils.log.logging_mixin import LoggingMixin
-from airflow.utils.state import State
 from datetime import datetime as dt
-from airflow.contrib.kubernetes.kubernetes_request_factory import \
-    pod_request_factory as pod_factory
+
 from kubernetes import watch
 from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream as kubernetes_stream
-from airflow import AirflowException
 from requests.exceptions import HTTPError
+
+from airflow import AirflowException
+from airflow.contrib.kubernetes.kubernetes_request_factory import \
+    pod_request_factory as pod_factory
+from airflow.utils.log.logging_mixin import LoggingMixin
+from airflow.utils.state import State
 from .kube_client import get_kube_client
 
 
@@ -83,16 +85,19 @@ class PodLauncher(LoggingMixin):
     def _monitor_pod(self, pod, get_logs):
         # type: (Pod) -> (State, content)
 
-        if get_logs:
-            logs = self._client.read_namespaced_pod_log(
-                name=pod.name,
-                namespace=pod.namespace,
-                container='base',
-                follow=True,
-                tail_lines=10,
-                _preload_content=False)
-            for line in logs:
-                self.log.info(line)
+        try:
+            if get_logs:
+                logs = self._client.read_namespaced_pod_log(
+                    name=pod.name,
+                    namespace=pod.namespace,
+                    container='base',
+                    follow=True,
+                    tail_lines=10,
+                    _preload_content=False)
+                for line in logs:
+                    self.log.info(line)
+        except ApiException as ex:
+            self.log.warning(ex)
         result = None
         if self.extract_xcom:
             while self.base_container_is_running(pod):
