@@ -92,16 +92,19 @@ class PodLauncher(LoggingMixin):
     def _monitor_pod(self, pod, get_logs):
         # type: (Pod) -> (State, content)
 
-        if get_logs:
-            logs = self._client.read_namespaced_pod_log(
-                name=pod.name,
-                namespace=pod.namespace,
-                container='base',
-                follow=True,
-                tail_lines=10,
-                _preload_content=False)
-            for line in logs:
-                self.log.info(line)
+        try:
+            if get_logs:
+                logs = self._client.read_namespaced_pod_log(
+                    name=pod.name,
+                    namespace=pod.namespace,
+                    container='base',
+                    follow=True,
+                    tail_lines=10,
+                    _preload_content=False)
+                for line in logs:
+                    self.log.info(line)
+        except ApiException as ex:
+            self.log.warning(ex)
         result = None
         if self.extract_xcom:
             while self.base_container_is_running(pod):
