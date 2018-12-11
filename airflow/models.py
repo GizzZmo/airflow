@@ -473,6 +473,18 @@ class DagBag(BaseDagBag, LoggingMixin):
 
         for ti in tis:
             if ti and ti.dag_id in self.dags:
+
+                jobs = (
+                    session.query(LJ)
+                    .filter(LJ.id == ti.job_id)
+                    .all()
+                )
+
+                for job in jobs:
+                    self.log.info("{} job has zombie tasks. Heartbeat: {}. State: {}".format(job.dag_id,
+                                                                                             job.latest_heartbeat,
+                                                                                             job.state))
+
                 dag = self.dags[ti.dag_id]
                 if ti.task_id in dag.task_ids:
                     task = dag.get_task(ti.task_id)
