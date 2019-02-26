@@ -1004,7 +1004,8 @@ class SchedulerJob(BaseJob):
             .filter(models.TaskInstance.state.in_(old_states)) \
             .filter(or_(
                 models.DagRun.state != State.RUNNING,
-                models.DagRun.state.is_(None)))
+                models.DagRun.state.is_(None))) \
+            .order_by(models.TaskInstance.dag_id.desc(), models.TaskInstance.task_id.desc())
         if self.using_sqlite:
             tis_to_change = query \
                 .with_for_update() \
