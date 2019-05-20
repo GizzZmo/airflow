@@ -86,6 +86,7 @@ if "BUILDING_AIRFLOW_DOCS" in os.environ:
 
 
 def sigint_handler(sig, frame):
+    sigquit_handler(sig, frame)
     sys.exit(0)
 
 
@@ -954,8 +955,8 @@ def worker(args):
     env = os.environ.copy()
     env['AIRFLOW_HOME'] = settings.AIRFLOW_HOME
 
+    log = LoggingMixin().log
     if not settings.validate_session():
-        log = LoggingMixin().log
         log.error("Worker exiting... database connection precheck failed! ")
         sys.exit(1)
 
@@ -974,6 +975,7 @@ def worker(args):
     }
 
     if args.daemon:
+        log.debug("Running as daemon")
         pid, stdout, stderr, log_file = setup_locations("worker",
                                                         args.pid,
                                                         args.stdout,
@@ -990,19 +992,27 @@ def worker(args):
             stderr=stderr,
         )
         with ctx:
+            log.debug("Starting log server")
             sp = subprocess.Popen(['airflow', 'serve_logs'], env=env, close_fds=True)
+            log.debug("Running worker")
             worker.run(**options)
+            log.debug("Shutting down")
             sp.kill()
 
         stdout.close()
         stderr.close()
     else:
+        log.debug("Running in process")
+        log.debug("Registering signal handlers")
         signal.signal(signal.SIGINT, sigint_handler)
         signal.signal(signal.SIGTERM, sigint_handler)
 
+        log.debug("Starting log server")
         sp = subprocess.Popen(['airflow', 'serve_logs'], env=env, close_fds=True)
 
+        log.debug("Running worker")
         worker.run(**options)
+        log.debug("Shutting down")
         sp.kill()
 
 

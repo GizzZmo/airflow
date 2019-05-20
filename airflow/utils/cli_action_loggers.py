@@ -64,9 +64,12 @@ def on_pre_execution(**kwargs):
     logging.debug("Calling callbacks: {}".format(__pre_exec_callbacks))
     for cb in __pre_exec_callbacks:
         try:
+            logging.debug("Calling: {}".format(cb))
             cb(**kwargs)
+            logging.debug("Returned from: {}".format(cb))
         except Exception:
             logging.exception('Failed on pre-execution callback using {}'.format(cb))
+    logging.debug("All callbacks done")
 
 
 def on_post_execution(**kwargs):
@@ -94,9 +97,14 @@ def default_action_log(log, **_):
     :param **_: other keyword arguments that is not being used by this function
     :return: None
     """
+
+    logging.debug("Fetching session")
     session = airflow.settings.Session()
+    logging.debug("Adding log: {}".format(log))
     session.add(log)
+    logging.debug("Committing session")
     session.commit()
+    logging.debug("Done")
 
 
 __pre_exec_callbacks = []
