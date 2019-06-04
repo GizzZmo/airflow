@@ -2142,7 +2142,10 @@ class HomeView(AdminIndexView):
             query = query.filter(~DM.is_paused)
 
         if arg_search_query:
-            query = query.filter(sqla.func.lower(DM.dag_id) == arg_search_query.lower())
+            query = query.filter(
+                sqla.func.lower(DM.dag_id)
+                .like('%' + arg_search_query.lower() + '%')
+            )
 
         query = query.order_by(DM.dag_id)
 
