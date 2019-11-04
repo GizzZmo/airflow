@@ -154,7 +154,7 @@ class PodLauncher(LoggingMixin):
                 _preload_content=False
             )
         except BaseHTTPError as e:
-            raise AirflowException(
+            self.log.warning(
                 'There was an error reading the kubernetes API: {}'.format(e)
             )
 
