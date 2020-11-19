@@ -152,8 +152,13 @@ class PodLauncher(LoggingMixin):
 
         if get_logs:
             logs = self.read_pod_logs(pod)
-            for line in logs:
-                self.log.info(line)
+            try:
+                for line in logs:
+                    self.log.info(line)
+            except BaseHTTPError as e:
+                self.log.warning(
+                    'There was an error reading the kubernetes API for logs: {}'.format(e)
+                )
         result = None
         if self.extract_xcom:
             while self.base_container_is_running(pod):
@@ -210,7 +215,7 @@ class PodLauncher(LoggingMixin):
                 _preload_content=False
             )
         except BaseHTTPError as e:
-            raise AirflowException(
+            self.log.warning(
                 'There was an error reading the kubernetes API: {}'.format(e)
             )
 
