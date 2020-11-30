@@ -18,7 +18,7 @@
 
 import re
 
-from airflow.exceptions import AirflowException
+from airflow.exceptions import AirflowException, AirflowNotFoundException
 from airflow.kubernetes import kube_client, pod_generator, pod_launcher
 from airflow.kubernetes.k8s_model import append_to_pod
 from airflow.kubernetes.pod import Resources
@@ -287,7 +287,7 @@ class KubernetesPodOperator(BaseOperator):  # pylint: disable=too-many-instance-
                     'Pod returned a failure: {state}'.format(state=final_state))
             return result
         except AirflowException as ex:
-            raise AirflowException('Pod Launching failed: {error}'.format(error=ex))
+            raise ex
 
     def handle_pod_overlap(self, labels, try_numbers_match, launcher, pod_list):
         """
@@ -408,7 +408,10 @@ class KubernetesPodOperator(BaseOperator):  # pylint: disable=too-many-instance-
             if self.log_events_on_failure:
                 for event in launcher.read_pod_events(pod).items:
                     self.log.error("Pod Event: %s - %s", event.reason, event.message)
-            raise AirflowException('Pod Launching failed: {error}'.format(error=ex))
+            if ex.status_code == 404:
+                raise AirflowNotFoundException('Pod Monitoring failed: {error}'.format(error=ex))
+            else:
+                raise AirflowException('Pod Launching failed: {error}'.format(error=ex))
         finally:
             if self.is_delete_operator_pod:
                 launcher.delete_pod(pod)

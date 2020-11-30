@@ -21,6 +21,7 @@ import warnings
 from datetime import datetime as dt
 
 import tenacity
+from airflow.exceptions import AirflowNotFoundException
 from kubernetes import watch, client
 from kubernetes.client.api_client import ApiClient
 from kubernetes.client import models as k8s
@@ -87,7 +88,7 @@ class PodLauncher(LoggingMixin):
         except Exception as e:
             self.log.exception('Exception when attempting '
                                'to create Namespaced Pod: %s', json_pod)
-            raise e
+            raise AirflowException(e)
         return resp
 
     @staticmethod
@@ -115,7 +116,7 @@ class PodLauncher(LoggingMixin):
                 settings.pod_mutation_hook(pod)
                 return pod
             except AttributeError as e2:
-                raise Exception([e, e2])
+                raise AirflowException([e, e2])
         return new_pod
 
     def delete_pod(self, pod):
@@ -126,7 +127,7 @@ class PodLauncher(LoggingMixin):
         except ApiException as e:
             # If the pod is already deleted
             if e.status != 404:
-                raise
+                raise AirflowException('There was an error reading the kubernetes API: {}'.format(e))
 
     def start_pod(
             self,
@@ -159,13 +160,8 @@ class PodLauncher(LoggingMixin):
 
         if get_logs:
             logs = self.read_pod_logs(pod)
-            try:
-                for line in logs:
-                    self.log.info(line)
-            except BaseHTTPError as e:
-                self.log.warning(
-                    'There was an error reading the kubernetes API for logs: {}'.format(e)
-                )
+            for line in logs:
+                self.log.info(line)
         result = None
         if self.extract_xcom:
             while self.base_container_is_running(pod):
@@ -221,8 +217,8 @@ class PodLauncher(LoggingMixin):
                 tail_lines=tail_lines,
                 _preload_content=False
             )
-        except BaseHTTPError as e:
-            self.log.warning(
+        except (ApiException, BaseHTTPError) as e:
+            raise AirflowNotFoundException(
                 'There was an error reading the kubernetes API: {}'.format(e)
             )
 
@@ -238,8 +234,8 @@ class PodLauncher(LoggingMixin):
                 namespace=pod.metadata.namespace,
                 field_selector="involvedObject.name={}".format(pod.metadata.name)
             )
-        except BaseHTTPError as e:
-            raise AirflowException(
+        except (ApiException, BaseHTTPError) as e:
+            raise AirflowNotFoundException(
                 'There was an error reading the kubernetes API: {}'.format(e)
             )
 
@@ -252,8 +248,8 @@ class PodLauncher(LoggingMixin):
         """Read POD information"""
         try:
             return self._client.read_namespaced_pod(pod.metadata.name, pod.metadata.namespace)
-        except BaseHTTPError as e:
-            raise AirflowException(
+        except (ApiException, BaseHTTPError) as e:
+            raise AirflowNotFoundException(
                 'There was an error reading the kubernetes API: {}'.format(e)
             )
 
