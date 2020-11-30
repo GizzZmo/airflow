@@ -210,7 +210,7 @@ class KubernetesPodOperator(BaseOperator):  # pylint: disable=too-many-instance-
         self.node_selectors = node_selectors or {}
         self.annotations = annotations or {}
         self.affinity = affinity or {}
-        self.resources = self._set_resources(resources)
+        self.resources = resources
         self.config_file = config_file
         self.image_pull_secrets = image_pull_secrets
         self.service_account_name = service_account_name
@@ -345,6 +345,7 @@ class KubernetesPodOperator(BaseOperator):  # pylint: disable=too-many-instance-
         @param launcher: pod launcher that will manage launching and monitoring pods
         @return:
         """
+        namespace = None
         if not (self.full_pod_spec or self.pod_template_file):
             # Add Airflow Version to the label
             # And a label to identify that pod is launched by KubernetesPodOperator
@@ -355,9 +356,11 @@ class KubernetesPodOperator(BaseOperator):  # pylint: disable=too-many-instance-
                 }
             )
             self.labels.update(labels)
+            namespace = self.namespace
+
         pod = pod_generator.PodGenerator(
             image=self.image,
-            namespace=self.namespace,
+            namespace=namespace,
             cmds=self.cmds,
             args=self.arguments,
             labels=self.labels,
@@ -388,7 +391,7 @@ class KubernetesPodOperator(BaseOperator):  # pylint: disable=too-many-instance-
             pod,
             self.pod_runtime_info_envs +  # type: ignore
             self.ports +  # type: ignore
-            self.resources +  # type: ignore
+            self._set_resources(self.resources) +  # type: ignore
             self.secrets +  # type: ignore
             self.volumes +  # type: ignore
             self.volume_mounts  # type: ignore

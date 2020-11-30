@@ -94,15 +94,22 @@ class PodLauncher(LoggingMixin):
     def _mutate_pod_backcompat(pod):
         """Backwards compatible Pod Mutation Hook"""
         try:
-            dummy_pod = _convert_to_airflow_pod(pod)
-            settings.pod_mutation_hook(dummy_pod)
-            warnings.warn(
-                "Using `airflow.contrib.kubernetes.pod.Pod` is deprecated. "
-                "Please use `k8s.V1Pod` instead.", DeprecationWarning, stacklevel=2
-            )
-            dummy_pod = dummy_pod.to_v1_kubernetes_pod()
+            def _is_v1_pod(meta):
+                return meta and meta.labels and \
+                       meta.labels.get('kubernetes_pod_operator', 'True') == 'False'
 
-            new_pod = PodGenerator.reconcile_pods(pod, dummy_pod)
+            if not _is_v1_pod(pod.metadata):
+                dummy_pod = _convert_to_airflow_pod(pod)
+                settings.pod_mutation_hook(dummy_pod)
+                warnings.warn(
+                    "Using `airflow.contrib.kubernetes.pod.Pod` is deprecated. "
+                    "Please use `k8s.V1Pod` instead.", DeprecationWarning, stacklevel=2
+                )
+                dummy_pod = dummy_pod.to_v1_kubernetes_pod()
+                new_pod = PodGenerator.reconcile_pods(pod, dummy_pod)
+            else:
+                settings.pod_mutation_hook(pod)
+                new_pod = pod
         except AttributeError as e:
             try:
                 settings.pod_mutation_hook(pod)
