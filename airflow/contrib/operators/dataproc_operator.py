@@ -53,11 +53,17 @@ class DataprocOperationBaseOperator(BaseOperator):
         self.delegate_to = delegate_to
         self.project_id = project_id
         self.region = region
-        self.hook = DataProcHook(
-            gcp_conn_id=self.gcp_conn_id,
-            delegate_to=self.delegate_to,
-            api_version='v1beta2'
-        )
+        self._hook = None
+
+    @property
+    def hook(self):
+        if self._hook is None:
+            self._hook = DataProcHook(
+                gcp_conn_id=self.gcp_conn_id,
+                delegate_to=self.delegate_to,
+                api_version='v1beta2'
+            )
+        return self._hook
 
     def execute(self, context):
         # pylint: disable=no-value-for-parameter
@@ -694,11 +700,17 @@ class DataProcJobBaseOperator(BaseOperator):
         self.region = region
         self.job_error_states = job_error_states if job_error_states is not None else {'ERROR'}
 
-        self.hook = DataProcHook(gcp_conn_id=gcp_conn_id,
-                                 delegate_to=delegate_to)
+        self._hook = None
         self.job_template = None
         self.job = None
         self.dataproc_job_id = None
+
+    @property
+    def hook(self):
+        if self._hook is None:
+            self._hook = DataProcHook(gcp_conn_id=self.gcp_conn_id,
+                                      delegate_to=self.delegate_to)
+        return self._hook
 
     def create_job_template(self):
         """
